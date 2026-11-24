@@ -88,6 +88,11 @@ impl Polynomial {
 		Self::normalized(vec![value])
 	}
 
+	pub fn is_zero(&self) -> bool {
+		let coeffs = self.get_coeffs();
+		coeffs.len() == 1 && coeffs[0].is_zero()
+	}
+
 	pub fn is_constant(&self) -> bool {
 		self.get_coeffs().len() <= 1
 	}
