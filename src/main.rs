@@ -16,6 +16,8 @@ fn main() {
 		return
 	}
 
-	let equation = Equation::new(args[1].clone()).unwrap();
+	let mut equation = Equation::new(args[1].clone()).expect("vntgmlrdp");
+	equation.left = equation.left.sub(&equation.right);
+	equation.right = equation.right.sub(&equation.right);
 	equation.print();
 }

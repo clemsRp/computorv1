@@ -4,8 +4,8 @@ use crate::polynomial::Polynomial;
 use crate::parser::Parser;
 
 pub struct Equation {
-	left: Polynomial,
-	right: Polynomial,
+	pub left: Polynomial,
+	pub right: Polynomial,
 }
 
 impl Equation {
@@ -25,9 +25,9 @@ impl Equation {
 	    let mut parser = Parser::new(tokens);
         
 	    // Get equation parts
-	    let left = parser.parse_expr()?;
+	    let left = parser.parse_expr(0)?;
 	    parser.expect(TokenKind::Equal)?;
-	    let right = parser.parse_expr()?;
+	    let right = parser.parse_expr(0)?;
 	    parser.expect(TokenKind::End)?;
         
 	    Ok(Equation {

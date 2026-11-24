@@ -45,7 +45,20 @@ impl Polynomial {
 		self.get_coeffs().len() <= 1
 	}
 
-	pub fn x(coeff: Fraction, power: usize) -> Self {
+	pub fn as_constant(&self) -> Result<Fraction, String> {
+		let coeffs = self.get_coeffs();
+		if coeffs.len() == 1 {
+			Ok(coeffs[0])
+		} else {
+			Err(String::new())
+		}
+	}
+
+	pub fn x() -> Self {
+		Self::normalized(vec![Fraction::default(), Fraction::one()])
+	}
+
+	pub fn x_pow(coeff: Fraction, power: usize) -> Self {
 		let mut raw_coeffs = vec![Fraction::default();power];
 		raw_coeffs.push(coeff);
 		Self::normalized(raw_coeffs)
@@ -171,6 +184,5 @@ impl Polynomial {
 
 			print!("{}{}X^{} ", sign, coeff.get_number(), pow);
 		}
-		println!();
 	}
 }

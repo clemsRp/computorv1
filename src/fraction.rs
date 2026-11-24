@@ -69,6 +69,10 @@ impl Fraction {
 		self.num == 0
 	}
 
+	pub fn is_integer(&self) -> bool {
+		self.denum == 1
+	}
+
 	pub fn negative(&self) -> Self {
 		Self{num: -self.get_num(), denum: self.get_denum()}
 	}
