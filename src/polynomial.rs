@@ -76,9 +76,9 @@ impl Polynomial {
 		Polynomial{coeffs: coeffs}
 	}
 
-	pub fn new(raw_coeffs: Vec<Fraction>) -> Self {
-		Self::normalized(raw_coeffs)
-	}
+	// pub fn new(raw_coeffs: Vec<Fraction>) -> Self {
+	// 	Self::normalized(raw_coeffs)
+	// }
 
 	pub fn get_coeffs(&self) -> &Vec<Fraction> {
 		&self.coeffs
@@ -93,9 +93,9 @@ impl Polynomial {
 		coeffs.len() == 1 && coeffs[0].is_zero()
 	}
 
-	pub fn is_constant(&self) -> bool {
-		self.get_coeffs().len() <= 1
-	}
+	// pub fn is_constant(&self) -> bool {
+	// 	self.get_coeffs().len() <= 1
+	// }
 
 	pub fn as_constant(&self) -> Result<Fraction, String> {
 		let coeffs = self.get_coeffs();
@@ -110,11 +110,11 @@ impl Polynomial {
 		Self::normalized(vec![Fraction::default(), Fraction::one()])
 	}
 
-	pub fn x_pow(coeff: Fraction, power: usize) -> Self {
-		let mut raw_coeffs = vec![Fraction::default();power];
-		raw_coeffs.push(coeff);
-		Self::normalized(raw_coeffs)
-	}
+	// pub fn x_pow(coeff: Fraction, power: usize) -> Self {
+	// 	let mut raw_coeffs = vec![Fraction::default();power];
+	// 	raw_coeffs.push(coeff);
+	// 	Self::normalized(raw_coeffs)
+	// }
 
 	pub fn negative(&self) -> Self {
 		// Get fractions
@@ -223,18 +223,5 @@ impl Polynomial {
 		}
 
 		res
-	}
-
-	pub fn print(&self) {
-		let coeffs = self.get_coeffs();
-
-		for (pow, coeff) in coeffs.iter().enumerate() {
-			let mut sign = "";
-			if !coeff.is_neg() && pow != 0 {
-				sign = "+";
-			}
-
-			print!("{}{}X^{} ", sign, coeff.get_number(), pow);
-		}
 	}
 }

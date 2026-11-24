@@ -18,7 +18,7 @@ pub enum TokenKind {
 #[derive(Debug, Clone)]
 pub struct Token {
     kind: TokenKind,
-    text: String,
+    // text: String,
 }
 
 impl Token {
@@ -26,9 +26,9 @@ impl Token {
 		&self.kind
 	}
 
-	pub fn get_text(&self) -> &String {
-		&self.text
-	}
+	// pub fn get_text(&self) -> &String {
+	// 	&self.text
+	// }
 }
 
 pub fn tokenize(input: String) -> Vec<Token> {
@@ -70,14 +70,14 @@ pub fn tokenize(input: String) -> Vec<Token> {
         };
 
         // Add new token
-        let text = raw_tokens[i..i + len].iter().collect();
-        tokens.push(Token {kind: kind, text: text});
+        // let text = raw_tokens[i..i + len].iter().collect();
+        tokens.push(Token {kind: kind});
 
         i += len;
     }
 
 	// Terminate tokens
-	tokens.push(Token{kind: TokenKind::End, text: String::new()});
+	tokens.push(Token{kind: TokenKind::End});
 
     tokens
 }

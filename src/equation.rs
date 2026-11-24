@@ -86,7 +86,7 @@ impl Equation {
 
 		match degree {
 			1 => self.handle_degree_one(&mut inter_print),
-			// 2 => self.handle_degree_two(&inter_print),
+			2 => self.handle_degree_two(&mut inter_print),
 			_ => panic!("vntgmlrdp"),
 		}
 
@@ -104,5 +104,48 @@ impl Equation {
 		result = result.div(&a);
 
 		inter_print.push(format!("{}", result));
+	}
+
+	fn handle_degree_two(&self, inter_print: &mut Vec<String>) {
+		// Get variables
+		let a = self.left.get_coeffs()[2];
+		let b = self.left.get_coeffs()[1];
+		let c = self.left.get_coeffs()[0];
+
+		// Calculate Discriminant
+		let left = b.pow(2);
+		let mut right = Fraction::new(4, 1);
+		right = right.mul(&a).mul(&c);
+		let discriminant = left.sub(&right);
+
+		// Get solutions common part
+		let mut common = Fraction::default();
+		common = common.sub(&b);
+		common = common.div(&a.mul(&Fraction::new(2, 1)));
+
+		match discriminant {
+			// Delta < 0 -> Imaginary
+		    d if d.is_neg() => {
+				let mut right = discriminant.negative().sqrt();
+				right = right.div(&a.mul(&Fraction::new(2, 1)));
+
+				inter_print.push(String::from("Discriminant is strictly negative, the two complex solutions are:"));
+				inter_print.push(format!("{} + {}i/{}", common, right.get_num().abs(), right.get_denum()));
+				inter_print.push(format!("{} - {}i/{}", common, right.get_num().abs(), right.get_denum()));
+			},
+
+			// Delta > 0 -> 2 distincts root
+		    d if d.is_pos() => {
+				inter_print.push(String::from("Discriminant is strictly positive, the two solutions are:"));
+				inter_print.push(format!("{}", common.add(&discriminant.sqrt())));
+				inter_print.push(format!("{}", common.sub(&discriminant.sqrt())));
+			},
+
+			// Delta = 0 -> 1 unique root
+		    _ => {
+				inter_print.push(String::from("Discriminant is null, the solution is:"));
+				inter_print.push(format!("{}", common));
+			},
+		}
 	}
 }
