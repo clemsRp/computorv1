@@ -1,8 +1,55 @@
+
+use std::fmt;
+
 use crate::fraction::Fraction;
 
 #[derive(Debug, Clone)]
 pub struct Polynomial {
 	coeffs: Vec<Fraction>,
+}
+
+impl fmt::Display for Polynomial {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut res = String::new();
+
+        for (power, factor) in self.coeffs.iter().enumerate() {
+            // Skip if factor is 0
+            if factor.is_zero() {
+                continue;
+            }
+
+            // Calculate factor sign print
+            let abs = if factor.is_neg() { factor.negative() } else { factor.clone() };
+            let is_first = res.is_empty();
+            if factor.is_neg() {
+                res.push_str(if is_first { "-" } else { " - " });
+            } else if !is_first {
+                res.push_str(" + ");
+            }
+
+            // Calculate factor print
+            if power == 0 || abs != Fraction::one() {
+                res.push_str(&abs.to_string());
+                if power != 0 {
+                    res.push_str(" * ");
+                }
+            }
+
+            // Calculate X power print
+			if power == 1 {
+                res.push_str(&format!("X"));
+			} else if power != 0 {
+                res.push_str(&format!("X^{}", power));
+            }
+        }
+
+		// Display 0 if result if null
+        if res.is_empty() {
+            res.push('0');
+        }
+
+        write!(f, "{}", res)
+    }
 }
 
 impl Polynomial {
@@ -33,7 +80,7 @@ impl Polynomial {
 		Self::normalized(raw_coeffs)
 	}
 
-	fn get_coeffs(&self) -> &Vec<Fraction> {
+	pub fn get_coeffs(&self) -> &Vec<Fraction> {
 		&self.coeffs
 	}
 

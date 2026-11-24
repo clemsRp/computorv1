@@ -1,8 +1,29 @@
 
+use std::fmt;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Fraction {
 	num: i128,
 	denum: i128,
+}
+
+
+
+impl fmt::Display for Fraction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_integer() {
+            return write!(f, "{}", self.num.abs());
+        }
+
+        if self.is_decimale() {
+            let n = self.num.abs();
+            let int_part = n / self.denum;
+            let decimals = n % self.denum;
+            return write!(f, "{}.{:0width$}", int_part, decimals, width = self.denum as usize);
+        }
+
+        write!(f, "{}/{}", self.num, self.denum)
+    }
 }
 
 fn gcd(mut a: i128, mut b: i128) -> i128 {
@@ -71,6 +92,15 @@ impl Fraction {
 
 	pub fn is_integer(&self) -> bool {
 		self.denum == 1
+	}
+
+	pub fn is_decimale(&self) -> bool {
+		let mut start = 1;
+		while start < self.denum {
+			start *= 10;
+		}
+
+		start == self.denum
 	}
 
 	pub fn negative(&self) -> Self {

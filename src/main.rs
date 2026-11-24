@@ -16,8 +16,18 @@ fn main() {
 		return
 	}
 
+	// Create equation
 	let mut equation = Equation::new(args[1].clone()).expect("vntgmlrdp");
-	equation.left = equation.left.sub(&equation.right);
-	equation.right = equation.right.sub(&equation.right);
-	equation.print();
+	equation = equation.reduced();
+	let degree = equation.get_degree();
+
+	println!("Reduced form: {}", equation);
+	println!("Polynomial degree: {}", degree);
+
+	let (prefix, solutions) = equation.solve();
+	println!("{}", prefix);
+
+	for solution in solutions.iter() {
+		println!("{}", solution);
+	}
 }
