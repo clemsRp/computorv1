@@ -1,6 +1,6 @@
 use crate::fraction::Fraction;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     Number(Fraction),
     X,
@@ -15,6 +15,7 @@ pub enum TokenKind {
     End,
 }
 
+#[derive(Debug, Clone)]
 pub struct Token {
     kind: TokenKind,
     text: String,
