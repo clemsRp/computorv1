@@ -1,8 +1,7 @@
 
+use crate::config::BP_UNAIRE;
 use crate::lexer::{TokenKind, Token};
 use crate::polynomial::Polynomial;
-
-const BP_UNAIRE: u8 = 5;
 
 pub struct Parser {
 	tokens: Vec<Token>,

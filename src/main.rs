@@ -1,32 +1,30 @@
 
-use std::env;
+use clap::Parser;
+use std::io;
 
+mod config;
 mod fraction;
 mod lexer;
 mod polynomial;
 mod parser;
 mod equation;
 
+use config::{set_fraction_mode, set_simple_mode};
 use equation::Equation;
 
-fn main() {
-	let mut step_active = false;
+fn read_stdin_line() -> Option<String> {
+    let mut line = String::new();
+    match io::stdin().read_line(&mut line) {
+        Ok(0) | Err(_) => None,
+        Ok(_) => Some(line.trim().to_string()),
+    }
+}
 
-	// Get input
-	let args: Vec<String> = env::args().collect();
-	if args.len() == 3 {
-		if args[2] != "--step" {
-			return ;
-		}
-		step_active = true;
-	} else if args.len() != 2 {
-		return
-	}
-
+fn get_equation_solutions(input: String) -> Vec<String> {
 	let mut final_prints: Vec<String> = Vec::new();
 
 	// Create equation
-	let mut equation = Equation::new(args[1].clone()).expect("vntgmlrdp");
+	let mut equation = Equation::new(input).expect("vntgmlrdp");
 	final_prints.push(format!("[step] Raw form: {}", equation));
 
 	// Simplified it
@@ -39,9 +37,48 @@ fn main() {
 	// Get solutions
 	final_prints.extend(equation.solve());
 
+	final_prints
+}
+
+// Args parsing
+#[derive(Parser)]
+struct Cli {
+    equation: Option<String>,
+
+    #[arg(long)]
+    step: bool,
+
+	#[arg(short, long)]
+    fraction: bool,
+
+	#[arg(long)]
+    simple: bool,
+}
+
+fn main() {
+	// Parse arguments
+	let cli = Cli::parse();
+	set_fraction_mode(cli.fraction);
+	set_simple_mode(cli.simple);
+
+	// Get input
+	let input = match cli.equation {
+        Some(equation) => equation,
+        None => {
+            let Some(line) = read_stdin_line() else {
+                eprintln!("Error: no equation provided");
+                std::process::exit(1);
+            };
+            line
+        }
+    };
+
+	// Get solutions
+	let final_prints: Vec<String> = get_equation_solutions(input);
+
 	// Display result
 	for line in final_prints.iter() {
-		if !line.starts_with("[step]") || step_active {
+		if !line.starts_with("[step]") || cli.step {
 			println!("{}", line);
 		}
 	}

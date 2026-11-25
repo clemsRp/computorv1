@@ -1,5 +1,6 @@
 
 use std::fmt;
+use crate::config::get_fraction_mode;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Fraction {
@@ -13,14 +14,23 @@ impl fmt::Display for Fraction {
             return write!(f, "{}", self.num.abs());
         }
 
-        if self.is_decimale() {
+        if let Some(digits) = self.decimal_digits() {
+            let sign = if self.num < 0 { "-" } else { "" };
             let n = self.num.abs();
             let int_part = n / self.denum;
             let decimals = n % self.denum;
-            return write!(f, "{}.{:0width$}", int_part, decimals, width = self.denum as usize);
+            return write!(f, "{}{}.{:0width$}", sign, int_part, decimals, width = digits);
         }
 
-        write!(f, "{}/{}", self.num, self.denum)
+		let want_fraction = get_fraction_mode();
+		if want_fraction {
+			return write!(f, "{}/{}", self.num, self.denum);
+		} else {
+			let value = self.num as f64 / self.denum as f64;
+			let text = format!("{:.6}", value);
+			let text = text.trim_end_matches('0').trim_end_matches('.');
+			return write!(f, "{}", text);
+		}
     }
 }
 
@@ -68,11 +78,18 @@ fn from_f64(x: f64) -> Fraction {
 
 impl Fraction {
 	pub fn new(num: i128, denum: i128) -> Self {
-		let divisor = gcd(num, denum);
+		let mut new_num = num;
+		let mut new_denum = denum;
+		let divisor = gcd(new_num, new_denum);
+
+		if denum < 0 {
+			new_num *= -1;
+			new_denum *= -1;
+		}
 
         Fraction {
-            num: num / divisor,
-            denum: denum / divisor,
+            num: new_num / divisor,
+            denum: new_denum / divisor,
         }
 	}
 
@@ -125,13 +142,14 @@ impl Fraction {
 		self.denum == 1
 	}
 
-	pub fn is_decimale(&self) -> bool {
-		let mut start = 1;
-		while start < self.denum {
-			start *= 10;
-		}
-
-		start == self.denum
+	pub fn decimal_digits(&self) -> Option<usize> {
+	    let mut power: i128 = 1;
+	    let mut digits = 0;
+	    while power < self.denum {
+	        power = power.checked_mul(10)?;
+	        digits += 1;
+	    }
+	    if power == self.denum { Some(digits) } else { None }
 	}
 
 	pub fn negative(&self) -> Self {
@@ -139,7 +157,7 @@ impl Fraction {
 	}
 
 	pub fn reciprocal(&self) -> Self {
-		Self{num: self.get_denum(), denum: self.get_num()}
+		Self::new(self.get_denum(), self.get_num())
 	}
 
 	pub fn add(&self, other: &Fraction) -> Self {

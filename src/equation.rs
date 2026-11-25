@@ -136,9 +136,12 @@ impl Equation {
 
 			// Delta > 0 -> 2 distincts root
 		    d if d.is_pos() => {
+				let mut right = discriminant.sqrt();
+				right = right.div(&a.mul(&Fraction::new(2, 1)));
+
 				inter_print.push(String::from("Discriminant is strictly positive, the two solutions are:"));
-				inter_print.push(format!("{}", common.add(&discriminant.sqrt())));
-				inter_print.push(format!("{}", common.sub(&discriminant.sqrt())));
+				inter_print.push(format!("{}", common.add(&right)));
+				inter_print.push(format!("{}", common.sub(&right)));
 			},
 
 			// Delta = 0 -> 1 unique root

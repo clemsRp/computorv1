@@ -1,6 +1,7 @@
 
 use std::fmt;
 
+use crate::config::get_simple_mode;
 use crate::fraction::Fraction;
 
 #[derive(Debug, Clone)]
@@ -11,10 +12,11 @@ pub struct Polynomial {
 impl fmt::Display for Polynomial {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut res = String::new();
+		let want_simple = get_simple_mode();
 
         for (power, factor) in self.coeffs.iter().enumerate() {
             // Skip if factor is 0
-            if factor.is_zero() {
+            if factor.is_zero() && want_simple {
                 continue;
             }
 
@@ -30,22 +32,26 @@ impl fmt::Display for Polynomial {
             // Calculate factor print
             if power == 0 || abs != Fraction::one() {
                 res.push_str(&abs.to_string());
-                if power != 0 {
+                if power != 0 || !want_simple {
                     res.push_str(" * ");
                 }
             }
 
             // Calculate X power print
-			if power == 1 {
+			if power == 1 && want_simple {
                 res.push_str(&format!("X"));
-			} else if power != 0 {
+			} else if power != 0 || !want_simple {
                 res.push_str(&format!("X^{}", power));
-            }
+			}
         }
 
 		// Display 0 if result if null
         if res.is_empty() {
-            res.push('0');
+			if want_simple {
+				res.push('0');
+			} else {
+				res.push_str("0 * X^0");
+			}
         }
 
         write!(f, "{}", res)
