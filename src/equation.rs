@@ -73,9 +73,13 @@ impl Equation {
 
 	// Utils
 	fn handle_degree_one(&self, inter_print: &mut Vec<String>) {
-		inter_print.push(String::from("The solution is:"));
 		let a = self.left.get_coeffs()[1];
 		let b = self.left.get_coeffs()[0];
+
+		inter_print.push(String::from("[step] Equation is 'ax + b' form:"));
+		inter_print.push(format!("[step] a = {}, b = {}", a, b));
+		inter_print.push(String::from("[step] Root = -b / a"));
+		inter_print.push(String::from("The solution is:"));
 
 		// Get result
 		let mut result = Fraction::default();
@@ -91,11 +95,14 @@ impl Equation {
 		let a = coeffs[2];
 		let b = coeffs[1];
 		let c = coeffs[0];
+		inter_print.push(String::from("[step] Equation is 'ax² + bx + c' form:"));
+		inter_print.push(format!("[step] a = {}, b = {}, c = {}", a, b, c));
 
 		// Calculate Discriminant
 		let left = b.pow(2);
 		let right = Fraction::new(4, 1) * a * c;
 		let discriminant = left - right;
+		inter_print.push(format!("[step] Discriminant (b² - 4ac): {}", discriminant));
 
 		// Get solutions common part
 		let mut common = Fraction::default();
