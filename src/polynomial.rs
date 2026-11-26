@@ -1,5 +1,6 @@
 
 use std::fmt;
+use std::ops::{Add, Sub, Mul, Div, Neg};
 
 use crate::error::{CalcError, CalcResult};
 use crate::config::get_simple_mode;
@@ -10,6 +11,79 @@ pub struct Polynomial {
 	coeffs: Vec<Fraction>,
 }
 
+impl Polynomial {
+	fn normalized(raw_coeffs: Vec<Fraction>) -> Self {
+		// Get last valid coeff
+		let mut last_index = raw_coeffs.len();
+		while last_index - 1 > 0 && raw_coeffs[last_index-1].is_zero() {
+			last_index -= 1;
+		}
+
+		// Handle empty coeffs
+		if raw_coeffs.len() == 0 {
+			return Polynomial{coeffs: raw_coeffs};
+		}
+
+		// Get valid coeffs
+		let mut i = 0;
+		let mut coeffs: Vec<Fraction> = Vec::new();
+		while i <= last_index - 1 {
+			coeffs.push(raw_coeffs[i].clone());
+			i += 1;
+		}
+
+		Polynomial{coeffs: coeffs}
+	}
+
+	pub fn constant(value: Fraction) -> Self {
+		Self::normalized(vec![value])
+	}
+
+	pub fn x() -> Self {
+		Self::normalized(vec![Fraction::default(), Fraction::one()])
+	}
+
+	pub fn pow(&self, power: u32) -> Self {
+		let mut res = Self::constant(Fraction::one());
+		let mut base = self.clone();
+		let mut exp = power;
+
+		while exp > 0 {
+			if exp % 2 == 1 {
+				res = res * base.clone();
+			}
+
+			exp /= 2;
+
+			if exp > 0 {
+				base = base.clone() * base.clone();
+			}
+		}
+
+		res
+	}
+
+	// Helpers
+	pub fn get_coeffs(&self) -> Vec<Fraction> {
+		self.coeffs.clone()
+	}
+
+	pub fn is_zero(&self) -> bool {
+		let coeffs = self.get_coeffs();
+		coeffs.len() == 1 && coeffs[0].is_zero()
+	}
+
+	pub fn as_constant(&self) -> CalcResult<Fraction> {
+		let coeffs = self.get_coeffs();
+		if coeffs.len() == 1 {
+			Ok(coeffs[0])
+		} else {
+			Err(CalcError::new("Polynomial is not a constant"))
+		}
+	}
+}
+
+// Define Polynomial display
 impl fmt::Display for Polynomial {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut res = String::new();
@@ -22,7 +96,7 @@ impl fmt::Display for Polynomial {
             }
 
             // Calculate factor sign print
-            let abs = if factor.is_neg() { factor.negative() } else { factor.clone() };
+            let abs = if factor.is_neg() { -*factor } else { factor.clone() };
             let is_first = res.is_empty();
             if factor.is_neg() {
                 res.push_str(if is_first { "-" } else { " - " });
@@ -59,100 +133,35 @@ impl fmt::Display for Polynomial {
     }
 }
 
-impl Polynomial {
-	fn normalized(raw_coeffs: Vec<Fraction>) -> Self {
-		// Get last valid coeff
-		let mut last_index = raw_coeffs.len();
-		while last_index - 1 > 0 && raw_coeffs[last_index-1].is_zero() {
-			last_index -= 1;
-		}
+// Define Polynamial default value
+impl Default for Polynomial {
+    fn default() -> Self {
+        Self::normalized(vec![Fraction::default()])
+    }
+}
 
-		// Handle empty coeffs
-		if raw_coeffs.len() == 0 {
-			return Polynomial{coeffs: raw_coeffs};
-		}
-
-		// Get valid coeffs
-		let mut i = 0;
-		let mut coeffs: Vec<Fraction> = Vec::new();
-		while i <= last_index - 1 {
-			coeffs.push(raw_coeffs[i].clone());
-			i += 1;
-		}
-
-		Polynomial{coeffs: coeffs}
-	}
-
-	// pub fn new(raw_coeffs: Vec<Fraction>) -> Self {
-	// 	Self::normalized(raw_coeffs)
-	// }
-
-	pub fn get_coeffs(&self) -> &Vec<Fraction> {
-		&self.coeffs
-	}
-
-	pub fn constant(value: Fraction) -> Self {
-		Self::normalized(vec![value])
-	}
-
-	pub fn is_zero(&self) -> bool {
-		let coeffs = self.get_coeffs();
-		coeffs.len() == 1 && coeffs[0].is_zero()
-	}
-
-	// pub fn is_constant(&self) -> bool {
-	// 	self.get_coeffs().len() <= 1
-	// }
-
-	pub fn as_constant(&self) -> CalcResult<Fraction> {
-		let coeffs = self.get_coeffs();
-		if coeffs.len() == 1 {
-			Ok(coeffs[0])
-		} else {
-			Err(CalcError::new("Polynomial is not a constant"))
-		}
-	}
-
-	pub fn x() -> Self {
-		Self::normalized(vec![Fraction::default(), Fraction::one()])
-	}
-
-	// pub fn x_pow(coeff: Fraction, power: usize) -> Self {
-	// 	let mut raw_coeffs = vec![Fraction::default();power];
-	// 	raw_coeffs.push(coeff);
-	// 	Self::normalized(raw_coeffs)
-	// }
-
-	pub fn negative(&self) -> Self {
-		// Get fractions
-		let coeffs: &Vec<Fraction> = self.get_coeffs();
+// Define Polynaomial operations
+impl Neg for Polynomial {
+	type Output = Self;
+    fn neg(self) -> Self {
+        // Get fractions
+		let coeffs: Vec<Fraction> = self.get_coeffs();
 		
 		let mut res: Vec<Fraction> = vec![Fraction::default();coeffs.len()];
 
 		// Get fractions reciprocal
 		for i in 0..coeffs.len() {
-			res[i] = coeffs[i].negative();
+			res[i] = -coeffs[i];
 		}
 
 		Self::normalized(res)
-	}
+    }
+}
 
-	pub fn reciprocal(&self) -> Self {
-		// Get fractions
-		let coeffs: &Vec<Fraction> = self.get_coeffs();
-		
-		let mut res: Vec<Fraction> = vec![Fraction::default();coeffs.len()];
-
-		// Get fractions reciprocal
-		for i in 0..coeffs.len() {
-			res[i] = coeffs[i].reciprocal();
-		}
-
-		Self::normalized(res)
-	}
-
-	pub fn add(&self, other: &Polynomial) -> Self {
-		// Get fractions
+impl Add for Polynomial {
+	type Output = Self;
+    fn add(self, other: Self) -> Self {
+        // Get fractions
 		let left = self.get_coeffs();
 		let right = other.get_coeffs();
 		
@@ -167,24 +176,30 @@ impl Polynomial {
 		for i in 0..length {
 			let mut temp = Fraction::default();
 			if i < l_len {
-				temp = temp.add(&left[i]);
+				temp = temp + left[i];
 			}
 			if i < r_len {
-				temp = temp.add(&right[i]);
+				temp = temp + right[i];
 			}
 
 			res[i] = temp;
 		}
 
 		Self::normalized(res)
-	}
+    }
+}
 
-	pub fn sub(&self, other: &Polynomial) -> Self {
-		self.add(&other.negative())
-	}
+impl Sub for Polynomial {
+	type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        self.add(-other)
+    }
+}
 
-	pub fn mul(&self, other: &Polynomial) -> Self {
-		// Get fractions
+impl Mul for Polynomial {
+	type Output = Self;
+    fn mul(self, other: Self) -> Self {
+        // Get fractions
 		let left = self.get_coeffs();
 		let right = other.get_coeffs();
 		
@@ -198,37 +213,25 @@ impl Polynomial {
 		// Execute double distribution
 		for (i, l_frac) in left.iter().enumerate() {
 			for (j, r_frac) in right.iter().enumerate() {
-				res[i+j] = res[i+j].add(&l_frac.mul(&r_frac));
+				res[i+j] = res[i+j] + *l_frac * *r_frac;
 			}
 		}
 
 		Self::normalized(res)
-	}
+    }
+}
 
-	pub fn div(&self, other: &Polynomial) -> Polynomial {
-		// if !other.is_constant() {
-		// 	TODO
-		// }
-		self.mul(&other.reciprocal())
-	}
+impl Div for Polynomial {
+    type Output = CalcResult<Self>;
 
-	pub fn pow(&self, power: u32) -> Self {
-		let mut res = Self::constant(Fraction::one());
-		let mut base = self.clone();
-		let mut exp = power;
+    fn div(self, other: Self) -> Self::Output {
+        let Ok(c) = other.as_constant() else {
+            return Err(CalcError::new("Can only divide polynomial by constants"));
+        };
+        if c.is_zero() {
+            return Err(CalcError::new("Division by zero"));
+        }
 
-		while exp > 0 {
-			if exp % 2 == 1 {
-				res = res.mul(&base);
-			}
-
-			exp /= 2;
-
-			if exp > 0 {
-				base = base.mul(&base);
-			}
-		}
-
-		res
-	}
+        Ok(self.mul(Polynomial::constant(c.reciprocal())))
+    }
 }

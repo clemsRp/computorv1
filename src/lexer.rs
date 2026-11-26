@@ -50,7 +50,7 @@ pub fn tokenize(input: String) -> CalcResult<Vec<Token>> {
 
 			// Numbers
 			'0'..='9' => {
-				let (value, len) = read_number(&raw_tokens, i);
+				let (value, len) = read_number(&raw_tokens, i)?;
 				(TokenKind::Number(value), len)
 			}
 			
@@ -84,7 +84,7 @@ pub fn tokenize(input: String) -> CalcResult<Vec<Token>> {
     Ok(tokens)
 }
 
-fn read_number(raw_tokens: &[char], start: usize) -> (Fraction, usize) {
+fn read_number(raw_tokens: &[char], start: usize) -> CalcResult<(Fraction, usize)> {
 	let mut base_digits = String::new();
 	let mut frac_digits = String::new();
 
@@ -106,16 +106,16 @@ fn read_number(raw_tokens: &[char], start: usize) -> (Fraction, usize) {
 		}
 
 		// Check non empty list
-		// if frac_digits.is_empty() {
-			// TODO
-		// }
+		if frac_digits.is_empty() {
+			return Err(CalcError::at(i, "Missing numbers after '.'"));
+		}
 	}
 
-	// if i < t_len && raw_tokens[i] == '.' {
-		// TODO
-	// }
+	if i < t_len && raw_tokens[i] == '.' {
+		return Err(CalcError::at(i, "Too many '.' characters"));
+	}
 
 	let value = Fraction::from_decimale(base_digits, frac_digits);
 
-	(value, i - start)
+	Ok((value, i - start))
 }

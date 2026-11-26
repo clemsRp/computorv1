@@ -4,6 +4,7 @@ use std::io;
 
 mod config;
 mod error;
+mod maths;
 mod fraction;
 mod lexer;
 mod polynomial;
@@ -31,7 +32,7 @@ fn get_equation_solutions(input: String) -> CalcResult<Vec<String>> {
 
 	// Simplified it
 	let sub = equation.clone();
-	let sub_equation =format!("{} - ({}) = {} - ({})", sub.get_left(), sub.get_right(), sub.get_right(), sub.get_right());
+	let sub_equation = format!("{} - ({}) = {} - ({})", sub.get_left(), sub.get_right(), sub.get_right(), sub.get_right());
 	final_prints.push(format!("[step] Subtract from both sides: {}", sub_equation));
 	equation = equation.reduced();
 	final_prints.push(format!("Reduced form: {}", equation));

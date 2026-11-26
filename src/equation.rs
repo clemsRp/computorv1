@@ -13,12 +13,6 @@ pub struct Equation {
 	right: Polynomial,
 }
 
-impl fmt::Display for Equation {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} = {}", self.left, self.right)
-    }
-}
-
 impl Equation {
     pub fn new(input: String) -> CalcResult<Self> {
         // Tokenize input
@@ -40,30 +34,13 @@ impl Equation {
     }
 
 	pub fn reduced(&self) -> Self {
-		let left = self.left.sub(&self.right);
-		let right = self.right.sub(&self.right);
+		let left = self.left.clone() - self.right.clone();
+		let right = self.right.clone() - self.right.clone();
 
 		Equation {
             left: left,
 	    	right: right,
 	    }
-	}
-
-	pub fn get_degree(&self) -> usize {
-		let l_coeffs = self.left.get_coeffs();
-		let r_coeffs = self.right.get_coeffs();
-
-		let degree = l_coeffs.len().max(r_coeffs.len()) - 1;
-
-		degree.max(0)
-	}
-
-	pub fn get_left(&self) -> Polynomial {
-		self.left.clone()
-	}
-
-	pub fn get_right(&self) -> Polynomial {
-		self.right.clone()
 	}
 
 	pub fn solve(&self) -> Vec<String> {
@@ -94,6 +71,7 @@ impl Equation {
 		inter_print
 	}
 
+	// Utils
 	fn handle_degree_one(&self, inter_print: &mut Vec<String>) {
 		inter_print.push(String::from("The solution is:"));
 		let a = self.left.get_coeffs()[1];
@@ -101,8 +79,8 @@ impl Equation {
 
 		// Get result
 		let mut result = Fraction::default();
-		result = result.sub(&b);
-		result = result.div(&a);
+		result = result - b;
+		result = result / a;
 
 		inter_print.push(format!("{}", result));
 	}
@@ -116,20 +94,19 @@ impl Equation {
 
 		// Calculate Discriminant
 		let left = b.pow(2);
-		let mut right = Fraction::new(4, 1);
-		right = right.mul(&a).mul(&c);
-		let discriminant = left.sub(&right);
+		let right = Fraction::new(4, 1) * a * c;
+		let discriminant = left - right;
 
 		// Get solutions common part
 		let mut common = Fraction::default();
-		common = common.sub(&b);
-		common = common.div(&a.mul(&Fraction::new(2, 1)));
+		common = common - b;
+		common = common / (Fraction::new(2, 1) * a);
 
 		match discriminant {
 			// Delta < 0 -> Imaginary
 		    d if d.is_neg() => {
-				let mut right = discriminant.negative().sqrt();
-				right = right.div(&a.mul(&Fraction::new(2, 1)));
+				let mut right = -discriminant.sqrt();
+				right = right / (Fraction::new(2, 1) * a);
 
 				inter_print.push(String::from("Discriminant is strictly negative, the two complex solutions are:"));
 				inter_print.push(format!("{} + {}i/{}", common, right.get_num().abs(), right.get_denum()));
@@ -139,11 +116,11 @@ impl Equation {
 			// Delta > 0 -> 2 distincts root
 		    d if d.is_pos() => {
 				let mut right = discriminant.sqrt();
-				right = right.div(&a.mul(&Fraction::new(2, 1)));
+				right = right / (Fraction::new(2, 1) * a);
 
 				inter_print.push(String::from("Discriminant is strictly positive, the two solutions are:"));
-				inter_print.push(format!("{}", common.add(&right)));
-				inter_print.push(format!("{}", common.sub(&right)));
+				inter_print.push(format!("{}", common + right));
+				inter_print.push(format!("{}", common - right));
 			},
 
 			// Delta = 0 -> 1 unique root
@@ -153,4 +130,29 @@ impl Equation {
 			},
 		}
 	}
+
+	// Helpers
+	pub fn get_degree(&self) -> usize {
+		let l_coeffs = self.left.get_coeffs();
+		let r_coeffs = self.right.get_coeffs();
+
+		let degree = l_coeffs.len().max(r_coeffs.len()) - 1;
+
+		degree.max(0)
+	}
+
+	pub fn get_left(&self) -> Polynomial {
+		self.left.clone()
+	}
+
+	pub fn get_right(&self) -> Polynomial {
+		self.right.clone()
+	}
+}
+
+// Define Equation display
+impl fmt::Display for Equation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} = {}", self.left, self.right)
+    }
 }

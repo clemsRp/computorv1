@@ -1,79 +1,13 @@
 
 use std::fmt;
+use std::ops::{Add, Sub, Mul, Div, Neg};
 use crate::config::get_fraction_mode;
+use crate::maths::{gcd, sqrt, from_f64};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Fraction {
 	num: i128,
 	denum: i128,
-}
-
-impl fmt::Display for Fraction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.is_integer() {
-            return write!(f, "{}", self.num.abs());
-        }
-
-        if let Some(digits) = self.decimal_digits() {
-            let sign = if self.num < 0 { "-" } else { "" };
-            let n = self.num.abs();
-            let int_part = n / self.denum;
-            let decimals = n % self.denum;
-            return write!(f, "{}{}.{:0width$}", sign, int_part, decimals, width = digits);
-        }
-
-		let want_fraction = get_fraction_mode();
-		if want_fraction {
-			return write!(f, "{}/{}", self.num, self.denum);
-		} else {
-			let value = self.num as f64 / self.denum as f64;
-			let text = format!("{:.6}", value);
-			let text = text.trim_end_matches('0').trim_end_matches('.');
-			return write!(f, "{}", text);
-		}
-    }
-}
-
-fn gcd(mut a: i128, mut b: i128) -> i128 {
-	a = a.abs();
-	b = b.abs();
-
-	while b != 0 {
-		let r = a % b;
-		a = b;
-		b = r;
-	}
-
-	a.max(1)
-}
-
-fn abs(x: f64) -> f64 {
-    if x < 0.0 {
-        -x
-    } else {
-        x
-    }
-}
-
-fn sqrt(x: f64) -> f64 {
-	if x <= 0.0 {
-	    return 0.0;
-	}
-	let mut guess = if x > 1.0 { x } else { 1.0 };
-	for _ in 0..1000 {
-	    let next = (guess + x / guess) / 2.0;
-	    if abs(next - guess) <= guess * 1e-15 {
-	        return next;
-	    }
-	    guess = next;
-	}
-	guess
-}
-
-fn from_f64(x: f64) -> Fraction {
-    let text = format!("{:.6}", x);
-    let (int_part, frac_part) = text.split_once('.').unwrap();
-    Fraction::from_decimale(int_part.to_string(), frac_part.to_string())
 }
 
 impl Fraction {
@@ -110,14 +44,38 @@ impl Fraction {
 		Self::new(raw_num, raw_denum)
 	}
 
-	pub fn default() -> Self {
-		Self::new(0, 1)
+	pub fn decimal_digits(&self) -> Option<usize> {
+	    let mut power: i128 = 1;
+	    let mut digits = 0;
+	    while power < self.denum {
+	        power = power.checked_mul(10)?;
+	        digits += 1;
+	    }
+	    if power == self.denum { Some(digits) } else { None }
 	}
 
 	pub fn one() -> Self {
 		Self::new(1, 1)
 	}
 
+	pub fn reciprocal(&self) -> Self {
+		Self::new(self.get_denum(), self.get_num())
+	}
+
+	pub fn pow(&self, power: u32) -> Self {
+		let new_num = self.num.pow(power);
+		let new_denum = self.denum.pow(power);
+
+		Self::new(new_num, new_denum)
+	}
+
+	pub fn sqrt(&self) -> Fraction {
+	    let num_root = from_f64(sqrt(self.num as f64));
+	    let den_root = from_f64(sqrt(self.denum as f64));
+	    num_root / den_root
+	}
+
+	// Helpers
 	pub fn get_num(&self) -> i128 {
 		self.num
 	}
@@ -141,57 +99,80 @@ impl Fraction {
 	pub fn is_integer(&self) -> bool {
 		self.denum == 1
 	}
+}
 
-	pub fn decimal_digits(&self) -> Option<usize> {
-	    let mut power: i128 = 1;
-	    let mut digits = 0;
-	    while power < self.denum {
-	        power = power.checked_mul(10)?;
-	        digits += 1;
-	    }
-	    if power == self.denum { Some(digits) } else { None }
-	}
+// Define Fraction display
+impl fmt::Display for Fraction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_integer() {
+            return write!(f, "{}", self.num);
+        }
 
-	pub fn negative(&self) -> Self {
-		Self{num: -self.get_num(), denum: self.get_denum()}
-	}
+        if let Some(digits) = self.decimal_digits() {
+            let sign = if self.num < 0 { "-" } else { "" };
+            let n = self.num.abs();
+            let int_part = n / self.denum;
+            let decimals = n % self.denum;
+            return write!(f, "{}{}.{:0width$}", sign, int_part, decimals, width = digits);
+        }
 
-	pub fn reciprocal(&self) -> Self {
-		Self::new(self.get_denum(), self.get_num())
-	}
+		let want_fraction = get_fraction_mode();
+		if want_fraction {
+			return write!(f, "{}/{}", self.num, self.denum);
+		} else {
+			let value = self.num as f64 / self.denum as f64;
+			let text = format!("{:.6}", value);
+			let text = text.trim_end_matches('0').trim_end_matches('.');
+			return write!(f, "{}", text);
+		}
+    }
+}
 
-	pub fn add(&self, other: &Fraction) -> Self {
-		let new_num = self.num * other.get_denum() + other.get_num() * self.denum;
+// Define Fraction default value
+impl Default for Fraction {
+    fn default() -> Self {
+        Self::new(0, 1)
+    }
+}
+
+// Define Fraction operations
+impl Neg for Fraction {
+	type Output = Self;
+    fn neg(self) -> Self {
+        Self{num: -self.get_num(), denum: self.get_denum()}
+    }
+}
+
+impl Add for Fraction {
+	type Output = Self;
+    fn add(self, other: Self) -> Self {
+        let new_num = self.num * other.get_denum() + other.get_num() * self.denum;
 		let new_denum = self.denum * other.get_denum();
 
 		Self::new(new_num, new_denum)
-	}
+    }
+}
 
-	pub fn sub(&self, other: &Fraction) -> Self {
-		self.add(&other.negative())
-	}
+impl Sub for Fraction {
+	type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        self.add(-other)
+    }
+}
 
-	pub fn mul(&self, other: &Fraction) -> Self {
-		let new_num = self.num * other.get_num();
+impl Mul for Fraction {
+	type Output = Self;
+    fn mul(self, other: Self) -> Self {
+        let new_num = self.num * other.get_num();
 		let new_denum = self.denum * other.get_denum();
 
 		Self::new(new_num, new_denum)
-	}
+    }
+}
 
-	pub fn div(&self, other: &Fraction) -> Self {
-		self.mul(&other.reciprocal())
-	}
-
-	pub fn pow(&self, power: u32) -> Self {
-		let new_num = self.num.pow(power);
-		let new_denum = self.denum.pow(power);
-
-		Self::new(new_num, new_denum)
-	}
-
-	pub fn sqrt(&self) -> Fraction {
-	    let num_root = from_f64(sqrt(self.num as f64));
-	    let den_root = from_f64(sqrt(self.denum as f64));
-	    num_root.div(&den_root)
-	}
+impl Div for Fraction {
+	type Output = Self;
+    fn div(self, other: Self) -> Self {
+        self.mul(other.reciprocal())
+    }
 }

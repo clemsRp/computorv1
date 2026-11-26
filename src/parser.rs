@@ -32,25 +32,13 @@ impl Parser {
 		Parser{tokens: tokens, index: 0}
 	}
 
-	fn peek(&self) -> Token {
-		self.tokens[self.index].clone()
-	}
-
-	fn next(&mut self) -> Token {
-		let token = self.tokens[self.index].clone();
-        if token.get_kind() != &TokenKind::End {
-            self.index += 1;
-        }
-        token
-	}
-
 	pub fn parse_expr(&mut self, min_bind: u8) -> CalcResult<Polynomial> {
 		// Get left part
 		let token = self.next();
 		let mut left_hand = match token.get_kind() {
 			&TokenKind::Number(value) => Polynomial::constant(value),
 			&TokenKind::X => Polynomial::x(),
-			&TokenKind::Minus => self.parse_expr(BP_UNAIRE)?.negative(),
+			&TokenKind::Minus => -self.parse_expr(BP_UNAIRE)?,
 			&TokenKind::Plus => self.parse_expr(BP_UNAIRE)?,
 			&TokenKind::LParen => {
 				let lh = self.parse_expr(0)?;
@@ -85,16 +73,16 @@ impl Parser {
 			// Execute operator between left and right part
 			let result = {
 				match op.get_kind() {
-					&TokenKind::Plus => left_hand.add(&right_hand),
-					&TokenKind::Minus => left_hand.sub(&right_hand),
-					&TokenKind::Slash => left_hand.div(&right_hand),
+					&TokenKind::Plus => left_hand + right_hand,
+					&TokenKind::Minus => left_hand - right_hand,
+					&TokenKind::Slash => (left_hand / right_hand)?,
 					&TokenKind::Caret => {
 						let exp = exponent_of(&right_hand)?;
 						left_hand.pow(exp.try_into().unwrap())
 					},
 
 					// Other case = explicite/implicite multiplication
-					_ => left_hand.mul(&right_hand),
+					_ => left_hand * right_hand,
 				}
 			};
 
@@ -102,6 +90,19 @@ impl Parser {
 		}
 
 		Ok(left_hand)
+	}
+
+	// Helpers
+	fn peek(&self) -> Token {
+		self.tokens[self.index].clone()
+	}
+
+	fn next(&mut self) -> Token {
+		let token = self.tokens[self.index].clone();
+        if token.get_kind() != &TokenKind::End {
+            self.index += 1;
+        }
+        token
 	}
 
 	pub fn expect(&mut self, exp_kind: TokenKind) -> CalcResult<()> {
