@@ -3,6 +3,7 @@ use clap::Parser;
 use std::io;
 
 mod config;
+mod error;
 mod fraction;
 mod lexer;
 mod polynomial;
@@ -10,6 +11,7 @@ mod parser;
 mod equation;
 
 use config::{set_fraction_mode, set_simple_mode};
+use error::CalcResult;
 use equation::Equation;
 
 fn read_stdin_line() -> Option<String> {
@@ -20,11 +22,11 @@ fn read_stdin_line() -> Option<String> {
     }
 }
 
-fn get_equation_solutions(input: String) -> Vec<String> {
+fn get_equation_solutions(input: String) -> CalcResult<Vec<String>> {
 	let mut final_prints: Vec<String> = Vec::new();
 
 	// Create equation
-	let mut equation = Equation::new(input).expect("vntgmlrdp");
+	let mut equation = Equation::new(input)?;
 	final_prints.push(format!("[step] Raw form: {}", equation));
 
 	// Simplified it
@@ -35,9 +37,10 @@ fn get_equation_solutions(input: String) -> Vec<String> {
 	final_prints.push(format!("Reduced form: {}", equation));
 	
 	// Get solutions
-	final_prints.extend(equation.solve());
+	let solved = equation.solve();
+	final_prints.extend(solved);
 
-	final_prints
+	Ok(final_prints)
 }
 
 // Args parsing
@@ -74,12 +77,18 @@ fn main() {
     };
 
 	// Get solutions
-	let final_prints: Vec<String> = get_equation_solutions(input);
-
-	// Display result
-	for line in final_prints.iter() {
-		if !line.starts_with("[step]") || cli.step {
-			println!("{}", line);
-		}
-	}
+	let final_prints = get_equation_solutions(input.clone());
+	match final_prints {
+        Ok(prints) => {
+			// Display result
+			for line in prints.iter() {
+				if !line.starts_with("[step]") || cli.step {
+					println!("{}", line);
+				}
+			}
+		},
+        Err(error) => {
+            error.report(input);
+        }
+    }
 }

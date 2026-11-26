@@ -1,4 +1,5 @@
 
+use crate::error::{CalcError, CalcResult};
 use crate::config::BP_UNAIRE;
 use crate::lexer::{TokenKind, Token};
 use crate::polynomial::Polynomial;
@@ -17,10 +18,10 @@ fn get_binding(token: &Token) -> Option<(u8, u8)> {
 	}
 }
 
-fn exponent_of(poly: &Polynomial) -> Result<i128, String> {
+fn exponent_of(poly: &Polynomial) -> CalcResult<i128> {
 	let value = poly.as_constant()?;
 	if !value.is_integer() {
-		return Err(String::new());
+		return Err(CalcError::new("Fraction is not an integer"));
 	}
 
 	Ok(value.get_num())
@@ -43,7 +44,7 @@ impl Parser {
         token
 	}
 
-	pub fn parse_expr(&mut self, min_bind: u8) -> Result<Polynomial, String> {
+	pub fn parse_expr(&mut self, min_bind: u8) -> CalcResult<Polynomial> {
 		// Get left part
 		let token = self.next();
 		let mut left_hand = match token.get_kind() {
@@ -57,7 +58,7 @@ impl Parser {
 				lh
 			},
 			_ => {
-				return Err(String::new());
+				return Err(CalcError::new(format!("Found '{}' wanted number, X, or '('", token.get_text())));
 			},
 		};
 
@@ -103,10 +104,12 @@ impl Parser {
 		Ok(left_hand)
 	}
 
-	pub fn expect(&mut self, exp_kind: TokenKind) -> Result<(), String> {
+	pub fn expect(&mut self, exp_kind: TokenKind) -> CalcResult<()> {
 		let next_token = self.next();
 		if next_token.get_kind() != &exp_kind {
-			return Err(format!("expected {:?}, found {:?}", exp_kind, next_token.get_kind()));
+			return Err(
+				CalcError::new(format!("expected {:?}, found {:?}", exp_kind, next_token.get_kind()))
+			);
 		}
 
 		Ok(())

@@ -1,3 +1,5 @@
+
+use crate::error::{CalcError, CalcResult};
 use crate::fraction::Fraction;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -18,7 +20,7 @@ pub enum TokenKind {
 #[derive(Debug, Clone)]
 pub struct Token {
     kind: TokenKind,
-    // text: String,
+    text: String,
 }
 
 impl Token {
@@ -26,12 +28,12 @@ impl Token {
 		&self.kind
 	}
 
-	// pub fn get_text(&self) -> &String {
-	// 	&self.text
-	// }
+	pub fn get_text(&self) -> &String {
+		&self.text
+	}
 }
 
-pub fn tokenize(input: String) -> Vec<Token> {
+pub fn tokenize(input: String) -> CalcResult<Vec<Token>> {
     let raw_tokens: Vec<char> = input.chars().collect();
     let mut tokens: Vec<Token> = Vec::new();
 
@@ -66,20 +68,20 @@ pub fn tokenize(input: String) -> Vec<Token> {
 			')' => (TokenKind::RParen, 1),
 
 			// Invalid char
-			_ => panic!("Invalid character : '{c}'"),
+			_ => return Err(CalcError::at(i, format!("Invalid character '{c}'"))),
         };
 
         // Add new token
-        // let text = raw_tokens[i..i + len].iter().collect();
-        tokens.push(Token {kind: kind});
+        let text = raw_tokens[i..i + len].iter().collect();
+        tokens.push(Token {kind: kind, text: text});
 
         i += len;
     }
 
 	// Terminate tokens
-	tokens.push(Token{kind: TokenKind::End});
+	tokens.push(Token{kind: TokenKind::End, text: String::new()});
 
-    tokens
+    Ok(tokens)
 }
 
 fn read_number(raw_tokens: &[char], start: usize) -> (Fraction, usize) {

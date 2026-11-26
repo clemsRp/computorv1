@@ -1,6 +1,7 @@
 
 use std::fmt;
 
+use crate::error::{CalcError, CalcResult};
 use crate::config::get_simple_mode;
 use crate::fraction::Fraction;
 
@@ -32,7 +33,7 @@ impl fmt::Display for Polynomial {
             // Calculate factor print
             if power == 0 || abs != Fraction::one() {
                 res.push_str(&abs.to_string());
-                if power != 0 || !want_simple {
+                if !want_simple {
                     res.push_str(" * ");
                 }
             }
@@ -103,12 +104,12 @@ impl Polynomial {
 	// 	self.get_coeffs().len() <= 1
 	// }
 
-	pub fn as_constant(&self) -> Result<Fraction, String> {
+	pub fn as_constant(&self) -> CalcResult<Fraction> {
 		let coeffs = self.get_coeffs();
 		if coeffs.len() == 1 {
 			Ok(coeffs[0])
 		} else {
-			Err(String::new())
+			Err(CalcError::new("Polynomial is not a constant"))
 		}
 	}
 

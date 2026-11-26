@@ -1,6 +1,10 @@
 
-# Bonus
+# Todo
+- Bonus
+- Tests
+- Organiser fonctions/fichiers
 
+# Bonus
 ## Did
 - Multiplication explicite et developpement des parentheses
 

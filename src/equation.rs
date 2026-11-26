@@ -1,6 +1,7 @@
 
 use std::fmt;
 
+use crate::error::CalcResult;
 use crate::fraction::Fraction;
 use crate::lexer::{TokenKind, tokenize};
 use crate::polynomial::Polynomial;
@@ -19,9 +20,9 @@ impl fmt::Display for Equation {
 }
 
 impl Equation {
-    pub fn new(input: String) -> Result<Self, String> {
+    pub fn new(input: String) -> CalcResult<Self> {
         // Tokenize input
-	    let tokens = tokenize(input);
+	    let tokens = tokenize(input)?;
 
 	    // Init parser
 	    let mut parser = Parser::new(tokens);
@@ -87,7 +88,7 @@ impl Equation {
 		match degree {
 			1 => self.handle_degree_one(&mut inter_print),
 			2 => self.handle_degree_two(&mut inter_print),
-			_ => panic!("vntgmlrdp"),
+			_ => inter_print.push(String::from("The polynomial degree is strictly greater than 2, I can't solve.")),
 		}
 
 		inter_print
@@ -108,9 +109,10 @@ impl Equation {
 
 	fn handle_degree_two(&self, inter_print: &mut Vec<String>) {
 		// Get variables
-		let a = self.left.get_coeffs()[2];
-		let b = self.left.get_coeffs()[1];
-		let c = self.left.get_coeffs()[0];
+		let coeffs = self.left.get_coeffs();
+		let a = coeffs[2];
+		let b = coeffs[1];
+		let c = coeffs[0];
 
 		// Calculate Discriminant
 		let left = b.pow(2);
