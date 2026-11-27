@@ -133,16 +133,40 @@ impl Fraction {
 	pub fn is_integer(&self) -> bool {
 		self.denum == 1
 	}
+
+	// Imaginary
+	pub fn format_imaginary(&self) -> String {
+        let abs = if self.is_neg() { (-*self).unwrap_or(*self) } else { *self };
+        let config = get_config();
+
+        if abs == Fraction::one() {
+            return String::from("i");
+        }
+        if abs.is_integer() {
+            return format!("{}i", abs.get_num());
+        }
+
+        if config.fraction {
+            if config.simple && abs.get_num() == 1 {
+                format!("i/{}", abs.get_denum())
+            } else {
+                format!("{}i/{}", abs.get_num(), abs.get_denum())
+            }
+        } else {
+            format!("{}i", abs)
+        }
+    }
 }
 
 // Define Fraction display
 impl fmt::Display for Fraction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.is_integer() {
+		let config = get_config();
+        if self.is_integer() && !config.fraction {
             return write!(f, "{}", self.num);
         }
 
-        if let Some(digits) = self.decimal_digits() {
+        if !config.fraction && let Some(digits) = self.decimal_digits() {
             let sign = if self.num < 0 { "-" } else { "" };
             let n = self.num.unsigned_abs();
             let denum = self.denum as u128;
@@ -151,7 +175,6 @@ impl fmt::Display for Fraction {
             return write!(f, "{}{}.{:0width$}", sign, int_part, decimals, width = digits);
         }
 
-		let config = get_config();
 		if config.fraction {
 			return write!(f, "{}/{}", self.num, self.denum);
 		} else {

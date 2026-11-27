@@ -1,6 +1,5 @@
 
 # Todo
-- Gestion d erreur
 - --simple et --fraction pour les imaginaires
 - Tests
 - Bonus

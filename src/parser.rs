@@ -53,12 +53,12 @@ impl Parser {
 				let pos = *token.get_pos();
 				(-self.parse_expr_depth(BP_UNAIRE, depth + 1)?).map_err(|e| e.at_if_none(pos))?
 			},
-			&TokenKind::Plus => self.parse_expr_depth(BP_UNAIRE, depth + 1)?,
 			&TokenKind::LParen => {
 				let lh = self.parse_expr_depth(0, depth + 1)?;
 				self.expect(TokenKind::RParen)?;
 				lh
 			},
+			&TokenKind::Plus => return Err(CalcError::at(*token.get_pos(), "Unexpected operator, expected number, 'X', or '('")),
 			TokenKind::End => return Err(CalcError::at(*token.get_pos(), "Unexpected end of input, expected number, 'X', or '('")),
 			_ => {
 				return Err(CalcError::at(

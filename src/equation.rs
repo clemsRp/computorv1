@@ -1,6 +1,7 @@
 
 use std::fmt;
 
+use crate::config::get_config;
 use crate::error::CalcResult;
 use crate::fraction::Fraction;
 use crate::lexer::{TokenKind, tokenize};
@@ -112,10 +113,19 @@ impl Equation {
 			// Delta < 0 -> Imaginary
 		    d if d.is_neg() => {
 				let right = ((-discriminant)?.sqrt()? / two_a)?;
+				let imag = right.format_imaginary();
+				let config = get_config();
 
 				inter_print.push(String::from("Discriminant is strictly negative, the two complex solutions are:"));
-				inter_print.push(format!("{} + {}i/{}", common, right.get_num().abs(), right.get_denum()));
-				inter_print.push(format!("{} - {}i/{}", common, right.get_num().abs(), right.get_denum()));
+
+				// Add imaginary solutions
+				if common.is_zero() && config.simple {
+					inter_print.push(format!("{}", imag));
+					inter_print.push(format!("-{}", imag));
+				} else {
+					inter_print.push(format!("{} + {}", common, imag));
+					inter_print.push(format!("{} - {}", common, imag));
+				}
 			},
 
 			// Delta > 0 -> 2 distincts root
