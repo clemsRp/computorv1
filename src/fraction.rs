@@ -1,7 +1,8 @@
 
 use std::fmt;
 use std::ops::{Add, Sub, Mul, Div, Neg};
-use crate::config::get_fraction_mode;
+use crate::config::get_config;
+use crate::error::{CalcError, CalcResult};
 use crate::maths::{gcd, sqrt, from_f64};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -27,21 +28,28 @@ impl Fraction {
         }
 	}
 
-	pub fn from_decimale(base_digits: String, frac_digits: String) -> Self {
-		let power: u32 = frac_digits.len().try_into().unwrap();
-		let scale = 10_i128.pow(power);
+	pub fn from_decimale(base_digits: String, frac_digits: String) -> CalcResult<Self> {
+		let power: u32 = frac_digits
+		    .len()
+		    .try_into()
+		    .map_err(|_| CalcError::new("number too large"))?;
+		let scale = 10_i128.checked_pow(power).
+			ok_or_else(|| CalcError::new("Too many decimal digits"))?;
 
-		let base_int: i128 = base_digits.parse().unwrap();
+		let base_int: i128 = base_digits.parse().map_err(|_| CalcError::new("number too large"))?;
         let frac_int: i128 = if frac_digits.is_empty() {
             0
         } else {
-            frac_digits.parse().unwrap()
+            frac_digits.parse().map_err(|_| CalcError::new("number too large"))?
         };
 
-        let raw_num = base_int * scale + frac_int;
+        let scaled = base_int.checked_mul(scale).
+			ok_or_else(|| CalcError::new("Number is too large"))?;
+        let raw_num = scaled.checked_add(frac_int).
+			ok_or_else(|| CalcError::new("Number is too large"))?;
         let raw_denum = scale;
 
-		Self::new(raw_num, raw_denum)
+		Ok(Self::new(raw_num, raw_denum))
 	}
 
 	pub fn decimal_digits(&self) -> Option<usize> {
@@ -58,21 +66,27 @@ impl Fraction {
 		Self::new(1, 1)
 	}
 
-	pub fn reciprocal(&self) -> Self {
-		Self::new(self.get_denum(), self.get_num())
+	pub fn reciprocal(&self) -> CalcResult<Self> {
+		if self.num == 0 {
+			return Err(CalcError::new("Division by zero"));
+		}
+
+		Ok(Self::new(self.get_denum(), self.get_num()))
 	}
 
-	pub fn pow(&self, power: u32) -> Self {
-		let new_num = self.num.pow(power);
-		let new_denum = self.denum.pow(power);
+	pub fn pow(&self, power: u32) -> CalcResult<Self> {
+		let new_num = self.num.checked_pow(power).
+			ok_or_else(|| CalcError::new("Arithmetic overflow"))?;
+        let new_denum = self.denum.checked_pow(power).
+			ok_or_else(|| CalcError::new("Arithmetic overflow"))?;
 
-		Self::new(new_num, new_denum)
+		Ok(Self::new(new_num, new_denum))
 	}
 
-	pub fn sqrt(&self) -> Fraction {
-	    let num_root = from_f64(sqrt(self.num as f64));
-	    let den_root = from_f64(sqrt(self.denum as f64));
-	    num_root / den_root
+	pub fn sqrt(&self) -> CalcResult<Fraction> {
+	    let num_root = from_f64(sqrt(self.num as f64))?;
+	    let den_root = from_f64(sqrt(self.denum as f64))?;
+	    Ok((num_root / den_root)?)
 	}
 
 	// Helpers
@@ -116,8 +130,8 @@ impl fmt::Display for Fraction {
             return write!(f, "{}{}.{:0width$}", sign, int_part, decimals, width = digits);
         }
 
-		let want_fraction = get_fraction_mode();
-		if want_fraction {
+		let config = get_config();
+		if config.fraction {
 			return write!(f, "{}/{}", self.num, self.denum);
 		} else {
 			let value = self.num as f64 / self.denum as f64;
@@ -171,8 +185,8 @@ impl Mul for Fraction {
 }
 
 impl Div for Fraction {
-	type Output = Self;
-    fn div(self, other: Self) -> Self {
-        self.mul(other.reciprocal())
+	type Output = CalcResult<Self>;
+    fn div(self, other: Self) -> Self::Output {
+        Ok(self.mul(other.reciprocal()?))
     }
 }

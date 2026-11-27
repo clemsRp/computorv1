@@ -11,7 +11,7 @@ mod polynomial;
 mod parser;
 mod equation;
 
-use config::{set_fraction_mode, set_simple_mode};
+use config::{FormatConfig, set_config};
 use error::CalcResult;
 use equation::Equation;
 
@@ -23,7 +23,7 @@ fn read_stdin_line() -> Option<String> {
     }
 }
 
-fn get_equation_solutions(input: String) -> CalcResult<Vec<String>> {
+fn get_equation_solutions(input: &str) -> CalcResult<Vec<String>> {
 	let mut final_prints: Vec<String> = Vec::new();
 
 	// Create equation
@@ -38,7 +38,7 @@ fn get_equation_solutions(input: String) -> CalcResult<Vec<String>> {
 	final_prints.push(format!("Reduced form: {}", equation));
 	
 	// Get solutions
-	let solved = equation.solve();
+	let solved = equation.solve()?;
 	final_prints.extend(solved);
 
 	Ok(final_prints)
@@ -62,8 +62,7 @@ struct Cli {
 fn main() {
 	// Parse arguments
 	let cli = Cli::parse();
-	set_fraction_mode(cli.fraction);
-	set_simple_mode(cli.simple);
+	set_config(FormatConfig { fraction: cli.fraction, simple: cli.simple });
 
 	// Get input
 	let input = match cli.equation {
@@ -77,8 +76,14 @@ fn main() {
         }
     };
 
+	// Handle empty inputs
+	if input.trim().is_empty() {
+        eprintln!("Error: empty equation");
+        std::process::exit(1);
+    }
+
 	// Get solutions
-	let final_prints = get_equation_solutions(input.clone());
+	let final_prints = get_equation_solutions(&input);
 	match final_prints {
         Ok(prints) => {
 			// Display result
@@ -89,7 +94,8 @@ fn main() {
 			}
 		},
         Err(error) => {
-            error.report(input);
+            error.report(&input);
+			std::process::exit(1);
         }
     }
 }

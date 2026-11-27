@@ -1,24 +1,29 @@
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicU8, Ordering};
 
-// Exact fraction flag
-static FRACTION_MODE: AtomicBool = AtomicBool::new(false);
-pub fn set_fraction_mode(value: bool) {
-    FRACTION_MODE.store(value, Ordering::Relaxed);
+#[derive(Clone, Copy, Default)]
+pub struct FormatConfig {
+    pub fraction: bool,
+    pub simple: bool,
 }
 
-pub fn get_fraction_mode() -> bool {
-    FRACTION_MODE.load(Ordering::Relaxed)
+const FRACTION_BIT: u8 = 1 << 0;
+const SIMPLE_BIT: u8   = 1 << 1;
+static CONFIG: AtomicU8 = AtomicU8::new(0);
+
+pub fn set_config(cfg: FormatConfig) {
+    let mut bits = 0;
+    if cfg.fraction { bits |= FRACTION_BIT; }
+    if cfg.simple   { bits |= SIMPLE_BIT; }
+    CONFIG.store(bits, Ordering::Relaxed);
 }
 
-// Simplified display flag
-static SIMPLIFIED_MODE: AtomicBool = AtomicBool::new(false);
-pub fn set_simple_mode(value: bool) {
-    SIMPLIFIED_MODE.store(value, Ordering::Relaxed);
-}
-
-pub fn get_simple_mode() -> bool {
-    SIMPLIFIED_MODE.load(Ordering::Relaxed)
+pub fn get_config() -> FormatConfig {
+    let bits = CONFIG.load(Ordering::Relaxed);
+    FormatConfig {
+        fraction: bits & FRACTION_BIT != 0,
+        simple:   bits & SIMPLE_BIT != 0,
+    }
 }
 
 // Constants

@@ -3,7 +3,7 @@ use std::fmt;
 use std::ops::{Add, Sub, Mul, Div, Neg};
 
 use crate::error::{CalcError, CalcResult};
-use crate::config::get_simple_mode;
+use crate::config::get_config;
 use crate::fraction::Fraction;
 
 #[derive(Debug, Clone)]
@@ -13,15 +13,15 @@ pub struct Polynomial {
 
 impl Polynomial {
 	fn normalized(raw_coeffs: Vec<Fraction>) -> Self {
+		// Handle empty coeffs
+		if raw_coeffs.len() == 0 {
+			return Polynomial{coeffs: raw_coeffs};
+		}
+
 		// Get last valid coeff
 		let mut last_index = raw_coeffs.len();
 		while last_index - 1 > 0 && raw_coeffs[last_index-1].is_zero() {
 			last_index -= 1;
-		}
-
-		// Handle empty coeffs
-		if raw_coeffs.len() == 0 {
-			return Polynomial{coeffs: raw_coeffs};
 		}
 
 		// Get valid coeffs
@@ -64,8 +64,8 @@ impl Polynomial {
 	}
 
 	// Helpers
-	pub fn get_coeffs(&self) -> Vec<Fraction> {
-		self.coeffs.clone()
+	pub fn get_coeffs(&self) -> &[Fraction] {
+		&self.coeffs
 	}
 
 	pub fn is_zero(&self) -> bool {
@@ -87,11 +87,11 @@ impl Polynomial {
 impl fmt::Display for Polynomial {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut res = String::new();
-		let want_simple = get_simple_mode();
+		let config = get_config();
 
         for (power, factor) in self.coeffs.iter().enumerate() {
             // Skip if factor is 0
-            if factor.is_zero() && want_simple {
+            if factor.is_zero() && config.simple {
                 continue;
             }
 
@@ -107,22 +107,22 @@ impl fmt::Display for Polynomial {
             // Calculate factor print
             if power == 0 || abs != Fraction::one() {
                 res.push_str(&abs.to_string());
-                if !want_simple {
+                if !config.simple {
                     res.push_str(" * ");
                 }
             }
 
             // Calculate X power print
-			if power == 1 && want_simple {
+			if power == 1 && config.simple {
                 res.push_str(&format!("X"));
-			} else if power != 0 || !want_simple {
+			} else if power != 0 || !config.simple {
                 res.push_str(&format!("X^{}", power));
 			}
         }
 
 		// Display 0 if result if null
         if res.is_empty() {
-			if want_simple {
+			if config.simple {
 				res.push('0');
 			} else {
 				res.push_str("0 * X^0");
@@ -145,7 +145,7 @@ impl Neg for Polynomial {
 	type Output = Self;
     fn neg(self) -> Self {
         // Get fractions
-		let coeffs: Vec<Fraction> = self.get_coeffs();
+		let coeffs = self.get_coeffs();
 		
 		let mut res: Vec<Fraction> = vec![Fraction::default();coeffs.len()];
 
@@ -232,6 +232,6 @@ impl Div for Polynomial {
             return Err(CalcError::new("Division by zero"));
         }
 
-        Ok(self.mul(Polynomial::constant(c.reciprocal())))
+        Ok(self.mul(Polynomial::constant(c.reciprocal()?)))
     }
 }

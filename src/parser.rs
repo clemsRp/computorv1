@@ -18,11 +18,13 @@ fn get_binding(token: &Token) -> Option<(u8, u8)> {
 	}
 }
 
-fn exponent_of(poly: &Polynomial) -> CalcResult<i128> {
-	let value = poly.as_constant()?;
-	if !value.is_integer() {
-		return Err(CalcError::new("Fraction is not an integer"));
-	}
+fn exponent_of(poly: &Polynomial, pos: usize) -> CalcResult<i128> {
+	let value = poly
+        .as_constant()
+        .map_err(|_| CalcError::at(pos, "Exponent must be a constant"))?;
+    if !value.is_integer() {
+        return Err(CalcError::at(pos, "Exponent must be an integer"));
+    }
 
 	Ok(value.get_num())
 }
@@ -45,8 +47,12 @@ impl Parser {
 				self.expect(TokenKind::RParen)?;
 				lh
 			},
+			TokenKind::End => return Err(CalcError::at(*token.get_pos(), "Unexpected end of input, expected number, 'X', or '('")),
 			_ => {
-				return Err(CalcError::new(format!("Found '{}' wanted number, X, or '('", token.get_text())));
+				return Err(CalcError::at(
+					*token.get_pos(),
+					format!("Expected a number, 'X', or '(', found '{}'", token.get_text()),
+				));
 			},
 		};
 
@@ -68,6 +74,8 @@ impl Parser {
 			}
 
 			// Parse right part
+			let op_pos = *op.get_pos();
+			let right_hand_pos = *self.peek().get_pos();
 			let right_hand = self.parse_expr(right_power)?;
 
 			// Execute operator between left and right part
@@ -75,10 +83,24 @@ impl Parser {
 				match op.get_kind() {
 					&TokenKind::Plus => left_hand + right_hand,
 					&TokenKind::Minus => left_hand - right_hand,
-					&TokenKind::Slash => (left_hand / right_hand)?,
+					&TokenKind::Slash => (left_hand / right_hand).map_err(|e| e.at_if_none(op_pos))?,
 					&TokenKind::Caret => {
-						let exp = exponent_of(&right_hand)?;
-						left_hand.pow(exp.try_into().unwrap())
+						let exp = exponent_of(&right_hand, right_hand_pos)?;
+
+						// Check exponent boundaries
+						if exp < 0 {
+                            return Err(CalcError::at(right_hand_pos, "Exponent cannot be negative"));
+                        }
+                        if exp > 1000 {
+                            return Err(CalcError::at(right_hand_pos, "Exponent is too large"));
+                        }
+
+						// Convert it into a u32 to use it
+                        let exp_u32: u32 = exp
+                            .try_into()
+                            .map_err(|_| CalcError::at(right_hand_pos, "Exponent is too large"))?;
+						
+						left_hand.pow(exp_u32)
 					},
 
 					// Other case = explicite/implicite multiplication
@@ -108,9 +130,14 @@ impl Parser {
 	pub fn expect(&mut self, exp_kind: TokenKind) -> CalcResult<()> {
 		let next_token = self.next();
 		if next_token.get_kind() != &exp_kind {
-			return Err(
-				CalcError::new(format!("expected {:?}, found {:?}", exp_kind, next_token.get_kind()))
-			);
+			let found = match next_token.get_kind() {
+        	    TokenKind::End => "end of input".to_string(),
+        	    _ => format!("'{}'", next_token.get_text()),
+        	};
+        	return Err(CalcError::at(
+        	    *next_token.get_pos(),
+        	    format!("Expected {}, found {}", exp_kind.label(), found),
+        	));
 		}
 
 		Ok(())

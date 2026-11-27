@@ -15,11 +15,23 @@ impl CalcError {
         CalcError { message: message.into(), position: Some(position) }
     }
 
-    pub fn report(&self, input: String) {
+    pub fn at_if_none(mut self, position: usize) -> Self {
+        if self.position.is_none() {
+            self.position = Some(position);
+        }
+        self
+    }
+
+    pub fn report(&self, input: &str) {
         eprintln!("Error: {}", self.message);
         if let Some(pos) = self.position {
             eprintln!("    {}", input);
-            eprintln!("    {}^", " ".repeat(pos));
+            let indent: String = input
+                .chars()
+                .take(pos)
+                .map(|c| if c == '\t' { '\t' } else { ' ' })
+                .collect();
+            eprintln!("    {}^", indent);
         }
     }
 }

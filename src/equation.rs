@@ -14,7 +14,7 @@ pub struct Equation {
 }
 
 impl Equation {
-    pub fn new(input: String) -> CalcResult<Self> {
+    pub fn new(input: &str) -> CalcResult<Self> {
         // Tokenize input
 	    let tokens = tokenize(input)?;
 
@@ -43,7 +43,7 @@ impl Equation {
 	    }
 	}
 
-	pub fn solve(&self) -> Vec<String> {
+	pub fn solve(&self) -> CalcResult<Vec<String>> {
 		let mut inter_print: Vec<String> = Vec::new();
 		let degree = self.get_degree();
 
@@ -57,22 +57,22 @@ impl Equation {
 				}
 			};
 			inter_print.push(String::from(end));
-			return inter_print;
+			return Ok(inter_print);
 		}
 
 		inter_print.push(format!("Polynomial degree: {}", degree));
 
 		match degree {
-			1 => self.handle_degree_one(&mut inter_print),
-			2 => self.handle_degree_two(&mut inter_print),
+			1 => self.handle_degree_one(&mut inter_print)?,
+			2 => self.handle_degree_two(&mut inter_print)?,
 			_ => inter_print.push(String::from("The polynomial degree is strictly greater than 2, I can't solve.")),
 		}
 
-		inter_print
+		Ok(inter_print)
 	}
 
 	// Utils
-	fn handle_degree_one(&self, inter_print: &mut Vec<String>) {
+	fn handle_degree_one(&self, inter_print: &mut Vec<String>) -> CalcResult<()>{
 		let a = self.left.get_coeffs()[1];
 		let b = self.left.get_coeffs()[0];
 
@@ -84,12 +84,14 @@ impl Equation {
 		// Get result
 		let mut result = Fraction::default();
 		result = result - b;
-		result = result / a;
+		result = (result / a)?;
 
 		inter_print.push(format!("{}", result));
+
+		Ok(())
 	}
 
-	fn handle_degree_two(&self, inter_print: &mut Vec<String>) {
+	fn handle_degree_two(&self, inter_print: &mut Vec<String>) -> CalcResult<()> {
 		// Get variables
 		let coeffs = self.left.get_coeffs();
 		let a = coeffs[2];
@@ -99,7 +101,7 @@ impl Equation {
 		inter_print.push(format!("[step] a = {}, b = {}, c = {}", a, b, c));
 
 		// Calculate Discriminant
-		let left = b.pow(2);
+		let left = b.pow(2)?;
 		let right = Fraction::new(4, 1) * a * c;
 		let discriminant = left - right;
 		inter_print.push(format!("[step] Discriminant (b² - 4ac): {}", discriminant));
@@ -107,13 +109,13 @@ impl Equation {
 		// Get solutions common part
 		let mut common = Fraction::default();
 		common = common - b;
-		common = common / (Fraction::new(2, 1) * a);
+		common = (common / (Fraction::new(2, 1) * a))?;
 
 		match discriminant {
 			// Delta < 0 -> Imaginary
 		    d if d.is_neg() => {
-				let mut right = -discriminant.sqrt();
-				right = right / (Fraction::new(2, 1) * a);
+				let mut right = (-discriminant).sqrt()?;
+				right = (right / (Fraction::new(2, 1) * a))?;
 
 				inter_print.push(String::from("Discriminant is strictly negative, the two complex solutions are:"));
 				inter_print.push(format!("{} + {}i/{}", common, right.get_num().abs(), right.get_denum()));
@@ -122,8 +124,8 @@ impl Equation {
 
 			// Delta > 0 -> 2 distincts root
 		    d if d.is_pos() => {
-				let mut right = discriminant.sqrt();
-				right = right / (Fraction::new(2, 1) * a);
+				let mut right = discriminant.sqrt()?;
+				right = (right / (Fraction::new(2, 1) * a))?;
 
 				inter_print.push(String::from("Discriminant is strictly positive, the two solutions are:"));
 				inter_print.push(format!("{}", common + right));
@@ -136,6 +138,8 @@ impl Equation {
 				inter_print.push(format!("{}", common));
 			},
 		}
+
+		Ok(())
 	}
 
 	// Helpers
@@ -143,9 +147,7 @@ impl Equation {
 		let l_coeffs = self.left.get_coeffs();
 		let r_coeffs = self.right.get_coeffs();
 
-		let degree = l_coeffs.len().max(r_coeffs.len()) - 1;
-
-		degree.max(0)
+		l_coeffs.len().max(r_coeffs.len()).saturating_sub(1)
 	}
 
 	pub fn get_left(&self) -> Polynomial {

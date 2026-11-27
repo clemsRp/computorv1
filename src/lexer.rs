@@ -17,10 +17,29 @@ pub enum TokenKind {
     End,
 }
 
+impl TokenKind {
+	pub fn label(&self) -> &'static str {
+		match self {
+			TokenKind::Equal => "'='",
+			TokenKind::Plus => "'+'",
+			TokenKind::Minus => "'-'",
+			TokenKind::Star => "'*'",
+			TokenKind::Slash => "'/'",
+			TokenKind::Caret => "'^'",
+			TokenKind::LParen => "'('",
+			TokenKind::RParen => "')'",
+			TokenKind::End => "end of input",
+			TokenKind::X => "'X'",
+			TokenKind::Number(_) => "a number",
+		}
+	}
+}
+
 #[derive(Debug, Clone)]
 pub struct Token {
     kind: TokenKind,
     text: String,
+	pos: usize,
 }
 
 impl Token {
@@ -31,9 +50,13 @@ impl Token {
 	pub fn get_text(&self) -> &String {
 		&self.text
 	}
+
+	pub fn get_pos(&self) -> &usize {
+		&self.pos
+	}
 }
 
-pub fn tokenize(input: String) -> CalcResult<Vec<Token>> {
+pub fn tokenize(input: &str) -> CalcResult<Vec<Token>> {
     let raw_tokens: Vec<char> = input.chars().collect();
     let mut tokens: Vec<Token> = Vec::new();
 
@@ -73,13 +96,13 @@ pub fn tokenize(input: String) -> CalcResult<Vec<Token>> {
 
         // Add new token
         let text = raw_tokens[i..i + len].iter().collect();
-        tokens.push(Token {kind: kind, text: text});
+        tokens.push(Token {kind: kind, text: text, pos: i});
 
         i += len;
     }
 
 	// Terminate tokens
-	tokens.push(Token{kind: TokenKind::End, text: String::new()});
+	tokens.push(Token{kind: TokenKind::End, text: String::new(), pos: raw_tokens.len()});
 
     Ok(tokens)
 }
@@ -115,7 +138,8 @@ fn read_number(raw_tokens: &[char], start: usize) -> CalcResult<(Fraction, usize
 		return Err(CalcError::at(i, "Too many '.' characters"));
 	}
 
-	let value = Fraction::from_decimale(base_digits, frac_digits);
+	let value = Fraction::from_decimale(base_digits, frac_digits).
+		map_err(|e| e.at_if_none(start))?;
 
 	Ok((value, i - start))
 }

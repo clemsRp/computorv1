@@ -1,9 +1,10 @@
 
+use crate::error::{CalcError, CalcResult};
 use crate::fraction::Fraction;
 
-pub fn gcd(mut a: i128, mut b: i128) -> i128 {
-	a = a.abs();
-	b = b.abs();
+pub fn gcd(a: i128, b: i128) -> i128 {
+	let mut a = a.unsigned_abs();
+	let mut b = b.unsigned_abs();
 
 	while b != 0 {
 		let r = a % b;
@@ -11,7 +12,7 @@ pub fn gcd(mut a: i128, mut b: i128) -> i128 {
 		b = r;
 	}
 
-	a.max(1)
+	i128::try_from(a.max(1)).unwrap_or(1)
 }
 
 pub fn abs(x: f64) -> f64 {
@@ -37,8 +38,15 @@ pub fn sqrt(x: f64) -> f64 {
 	guess
 }
 
-pub fn from_f64(x: f64) -> Fraction {
+pub fn from_f64(x: f64) -> CalcResult<Fraction> {
+    if !x.is_finite() {
+        return Err(CalcError::new("Cannot convert a non-finite number"));
+    }
+
     let text = format!("{:.6}", x);
-    let (int_part, frac_part) = text.split_once('.').unwrap();
+    let Some((int_part, frac_part)) = text.split_once('.') else {
+        return Err(CalcError::new("Failed to format float"));
+    };
+
     Fraction::from_decimale(int_part.to_string(), frac_part.to_string())
 }
