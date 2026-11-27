@@ -34,7 +34,7 @@ fn get_equation_solutions(input: &str) -> CalcResult<Vec<String>> {
 	let sub = equation.clone();
 	let sub_equation = format!("{} - ({}) = {} - ({})", sub.get_left(), sub.get_right(), sub.get_right(), sub.get_right());
 	final_prints.push(format!("[step] Subtract from both sides: {}", sub_equation));
-	equation = equation.reduced();
+	equation = equation.reduced()?;
 	final_prints.push(format!("Reduced form: {}", equation));
 	
 	// Get solutions

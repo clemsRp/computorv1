@@ -33,14 +33,14 @@ impl Equation {
 	    })
     }
 
-	pub fn reduced(&self) -> Self {
-		let left = self.left.clone() - self.right.clone();
-		let right = self.right.clone() - self.right.clone();
+	pub fn reduced(&self) -> CalcResult<Self> {
+		let left = (self.left.clone() - self.right.clone())?;
+		let right = Polynomial::default();
 
-		Equation {
+		Ok(Equation {
             left: left,
 	    	right: right,
-	    }
+	    })
 	}
 
 	pub fn solve(&self) -> CalcResult<Vec<String>> {
@@ -82,9 +82,7 @@ impl Equation {
 		inter_print.push(String::from("The solution is:"));
 
 		// Get result
-		let mut result = Fraction::default();
-		result = result - b;
-		result = (result / a)?;
+		let result = ((-b)? / a)?;
 
 		inter_print.push(format!("{}", result));
 
@@ -102,20 +100,18 @@ impl Equation {
 
 		// Calculate Discriminant
 		let left = b.pow(2)?;
-		let right = Fraction::new(4, 1) * a * c;
-		let discriminant = left - right;
+		let right = ((Fraction::new(4, 1) * a)? * c)?;
+		let discriminant = (left - right)?;
 		inter_print.push(format!("[step] Discriminant (b² - 4ac): {}", discriminant));
 
 		// Get solutions common part
-		let mut common = Fraction::default();
-		common = common - b;
-		common = (common / (Fraction::new(2, 1) * a))?;
+		let two_a = (Fraction::new(2, 1) * a)?;
+		let common = ((-b)? / two_a)?;
 
 		match discriminant {
 			// Delta < 0 -> Imaginary
 		    d if d.is_neg() => {
-				let mut right = (-discriminant).sqrt()?;
-				right = (right / (Fraction::new(2, 1) * a))?;
+				let right = ((-discriminant)?.sqrt()? / two_a)?;
 
 				inter_print.push(String::from("Discriminant is strictly negative, the two complex solutions are:"));
 				inter_print.push(format!("{} + {}i/{}", common, right.get_num().abs(), right.get_denum()));
@@ -124,12 +120,11 @@ impl Equation {
 
 			// Delta > 0 -> 2 distincts root
 		    d if d.is_pos() => {
-				let mut right = discriminant.sqrt()?;
-				right = (right / (Fraction::new(2, 1) * a))?;
+				let right = (discriminant.sqrt()? / two_a)?;
 
 				inter_print.push(String::from("Discriminant is strictly positive, the two solutions are:"));
-				inter_print.push(format!("{}", common + right));
-				inter_print.push(format!("{}", common - right));
+				inter_print.push(format!("{}", (common + right)?));
+				inter_print.push(format!("{}", (common - right)?));
 			},
 
 			// Delta = 0 -> 1 unique root

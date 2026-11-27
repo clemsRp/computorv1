@@ -35,15 +35,27 @@ impl Parser {
 	}
 
 	pub fn parse_expr(&mut self, min_bind: u8) -> CalcResult<Polynomial> {
+		self.parse_expr_depth(min_bind, 0)
+	}
+
+	fn parse_expr_depth(&mut self, min_bind: u8, depth: usize) -> CalcResult<Polynomial> {
+		const MAX_DEPTH: usize = 256;
+		if depth > MAX_DEPTH {
+			return Err(CalcError::at(*self.peek().get_pos(), "Expression is too deeply nested"));
+		}
+
 		// Get left part
 		let token = self.next();
 		let mut left_hand = match token.get_kind() {
 			&TokenKind::Number(value) => Polynomial::constant(value),
 			&TokenKind::X => Polynomial::x(),
-			&TokenKind::Minus => -self.parse_expr(BP_UNAIRE)?,
-			&TokenKind::Plus => self.parse_expr(BP_UNAIRE)?,
+			&TokenKind::Minus => {
+				let pos = *token.get_pos();
+				(-self.parse_expr_depth(BP_UNAIRE, depth + 1)?).map_err(|e| e.at_if_none(pos))?
+			},
+			&TokenKind::Plus => self.parse_expr_depth(BP_UNAIRE, depth + 1)?,
 			&TokenKind::LParen => {
-				let lh = self.parse_expr(0)?;
+				let lh = self.parse_expr_depth(0, depth + 1)?;
 				self.expect(TokenKind::RParen)?;
 				lh
 			},
@@ -76,13 +88,13 @@ impl Parser {
 			// Parse right part
 			let op_pos = *op.get_pos();
 			let right_hand_pos = *self.peek().get_pos();
-			let right_hand = self.parse_expr(right_power)?;
+			let right_hand = self.parse_expr_depth(right_power, depth + 1)?;
 
 			// Execute operator between left and right part
 			let result = {
 				match op.get_kind() {
-					&TokenKind::Plus => left_hand + right_hand,
-					&TokenKind::Minus => left_hand - right_hand,
+					&TokenKind::Plus => (left_hand + right_hand).map_err(|e| e.at_if_none(op_pos))?,
+					&TokenKind::Minus => (left_hand - right_hand).map_err(|e| e.at_if_none(op_pos))?,
 					&TokenKind::Slash => (left_hand / right_hand).map_err(|e| e.at_if_none(op_pos))?,
 					&TokenKind::Caret => {
 						let exp = exponent_of(&right_hand, right_hand_pos)?;
@@ -100,11 +112,11 @@ impl Parser {
                             .try_into()
                             .map_err(|_| CalcError::at(right_hand_pos, "Exponent is too large"))?;
 						
-						left_hand.pow(exp_u32)
+						left_hand.pow(exp_u32).map_err(|e| e.at_if_none(op_pos))?
 					},
 
 					// Other case = explicite/implicite multiplication
-					_ => left_hand * right_hand,
+					_ => (left_hand * right_hand).map_err(|e| e.at_if_none(op_pos))?,
 				}
 			};
 

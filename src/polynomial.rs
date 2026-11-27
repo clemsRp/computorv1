@@ -43,24 +43,24 @@ impl Polynomial {
 		Self::normalized(vec![Fraction::default(), Fraction::one()])
 	}
 
-	pub fn pow(&self, power: u32) -> Self {
+	pub fn pow(&self, power: u32) -> CalcResult<Self> {
 		let mut res = Self::constant(Fraction::one());
 		let mut base = self.clone();
 		let mut exp = power;
 
 		while exp > 0 {
 			if exp % 2 == 1 {
-				res = res * base.clone();
+				res = (res * base.clone())?;
 			}
 
 			exp /= 2;
 
 			if exp > 0 {
-				base = base.clone() * base.clone();
+				base = (base.clone() * base.clone())?;
 			}
 		}
 
-		res
+		Ok(res)
 	}
 
 	// Helpers
@@ -96,7 +96,7 @@ impl fmt::Display for Polynomial {
             }
 
             // Calculate factor sign print
-            let abs = if factor.is_neg() { -*factor } else { factor.clone() };
+            let abs = if factor.is_neg() { (-*factor).unwrap_or(*factor) } else { *factor };
             let is_first = res.is_empty();
             if factor.is_neg() {
                 res.push_str(if is_first { "-" } else { " - " });
@@ -142,8 +142,8 @@ impl Default for Polynomial {
 
 // Define Polynaomial operations
 impl Neg for Polynomial {
-	type Output = Self;
-    fn neg(self) -> Self {
+	type Output = CalcResult<Self>;
+    fn neg(self) -> Self::Output {
         // Get fractions
 		let coeffs = self.get_coeffs();
 		
@@ -151,16 +151,16 @@ impl Neg for Polynomial {
 
 		// Get fractions reciprocal
 		for i in 0..coeffs.len() {
-			res[i] = -coeffs[i];
+			res[i] = (-coeffs[i])?;
 		}
 
-		Self::normalized(res)
+		Ok(Self::normalized(res))
     }
 }
 
 impl Add for Polynomial {
-	type Output = Self;
-    fn add(self, other: Self) -> Self {
+	type Output = CalcResult<Self>;
+    fn add(self, other: Self) -> Self::Output {
         // Get fractions
 		let left = self.get_coeffs();
 		let right = other.get_coeffs();
@@ -176,29 +176,29 @@ impl Add for Polynomial {
 		for i in 0..length {
 			let mut temp = Fraction::default();
 			if i < l_len {
-				temp = temp + left[i];
+				temp = (temp + left[i])?;
 			}
 			if i < r_len {
-				temp = temp + right[i];
+				temp = (temp + right[i])?;
 			}
 
 			res[i] = temp;
 		}
 
-		Self::normalized(res)
+		Ok(Self::normalized(res))
     }
 }
 
 impl Sub for Polynomial {
-	type Output = Self;
-    fn sub(self, other: Self) -> Self {
-        self.add(-other)
+	type Output = CalcResult<Self>;
+    fn sub(self, other: Self) -> Self::Output {
+        self + (-other)?
     }
 }
 
 impl Mul for Polynomial {
-	type Output = Self;
-    fn mul(self, other: Self) -> Self {
+	type Output = CalcResult<Self>;
+    fn mul(self, other: Self) -> Self::Output {
         // Get fractions
 		let left = self.get_coeffs();
 		let right = other.get_coeffs();
@@ -213,11 +213,11 @@ impl Mul for Polynomial {
 		// Execute double distribution
 		for (i, l_frac) in left.iter().enumerate() {
 			for (j, r_frac) in right.iter().enumerate() {
-				res[i+j] = res[i+j] + *l_frac * *r_frac;
+				res[i+j] = (res[i+j] + (*l_frac * *r_frac)?)?;
 			}
 		}
 
-		Self::normalized(res)
+		Ok(Self::normalized(res))
     }
 }
 
@@ -232,6 +232,6 @@ impl Div for Polynomial {
             return Err(CalcError::new("Division by zero"));
         }
 
-        Ok(self.mul(Polynomial::constant(c.reciprocal()?)))
+        self * Polynomial::constant(c.reciprocal()?)
     }
 }
