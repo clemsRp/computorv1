@@ -134,11 +134,42 @@ mod tests {
         assert_eq!(solutions.len(), 2, "Expected 2 complex solutions, got: {:?}", out);
     }
 
-    // Degree > 2
+    // Degree 3
+    #[test]
+    fn test_degree_three_positive_discriminant() {
+        let out = solve("X^3 - 6 * X^2 + 11 * X - 6 = 0");
+        assert!(out.iter().any(|l| l.contains("strictly positive")), "{:?}", out);
+        assert!(out.iter().any(|l| l == "1"), "{:?}", out);
+        assert!(out.iter().any(|l| l == "2"), "{:?}", out);
+        assert!(out.iter().any(|l| l == "3"), "{:?}", out);
+    }
+
+    #[test]
+    fn test_degree_three_negative_discriminant() {
+        let out = solve("X^3 + X + 1 = 0");
+        assert!(out.iter().any(|l| l.contains("strictly negative")), "{:?}", out);
+    }
+
+    #[test]
+    fn test_degree_three_zero_discriminant_triple() {
+        let out = solve("X^3 - 3 * X^2 + 3 * X - 1 = 0");
+        assert!(out.iter().any(|l| l.contains("triple")), "{:?}", out);
+        assert!(out.iter().any(|l| l == "1"), "{:?}", out);
+    }
+
+    #[test]
+    fn test_degree_three_zero_discriminant_double() {
+        let out = solve("X^3 - 5 * X^2 + 8 * X - 4 = 0");
+        assert!(out.iter().any(|l| l.contains("double")), "{:?}", out);
+        assert!(out.iter().any(|l| l == "2"), "{:?}", out);
+        assert!(out.iter().any(|l| l == "1"), "{:?}", out);
+    }
+
+    // Degree > 3
     #[test]
     fn test_degree_too_high() {
-        let out = solve("X^3 = 0");
-        assert!(out.iter().any(|l| l.contains("greater than 2")), "{:?}", out);
+        let out = solve("X^4 = 0");
+        assert!(out.iter().any(|l| l.contains("greater than 3")), "{:?}", out);
     }
 
     // Error cases
