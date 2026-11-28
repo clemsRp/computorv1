@@ -10,10 +10,10 @@ mod lexer;
 mod polynomial;
 mod parser;
 mod equation;
+mod solver;
 
 use config::{FormatConfig, set_config};
-use error::CalcResult;
-use equation::Equation;
+use solver::get_equation_solutions;
 
 fn read_stdin_line() -> Option<String> {
     let mut line = String::new();
@@ -21,27 +21,6 @@ fn read_stdin_line() -> Option<String> {
         Ok(0) | Err(_) => None,
         Ok(_) => Some(line.trim().to_string()),
     }
-}
-
-fn get_equation_solutions(input: &str) -> CalcResult<Vec<String>> {
-	let mut final_prints: Vec<String> = Vec::new();
-
-	// Create equation
-	let mut equation = Equation::new(input)?;
-	final_prints.push(format!("[step] Raw form: {}", equation));
-
-	// Simplified it
-	let sub = equation.clone();
-	let sub_equation = format!("{} - ({}) = {} - ({})", sub.get_left(), sub.get_right(), sub.get_right(), sub.get_right());
-	final_prints.push(format!("[step] Subtract from both sides: {}", sub_equation));
-	equation = equation.reduced()?;
-	final_prints.push(format!("Reduced form: {}", equation));
-	
-	// Get solutions
-	let solved = equation.solve()?;
-	final_prints.extend(solved);
-
-	Ok(final_prints)
 }
 
 // Args parsing

@@ -1,4 +1,5 @@
 
+#[derive(Debug)]
 pub struct CalcError {
     message: String,
     position: Option<usize>,
