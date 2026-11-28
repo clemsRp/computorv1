@@ -47,12 +47,12 @@ impl Token {
 		&self.kind
 	}
 
-	pub fn get_text(&self) -> &String {
+	pub fn get_text(&self) -> &str {
 		&self.text
 	}
 
-	pub fn get_pos(&self) -> &usize {
-		&self.pos
+	pub fn get_pos(&self) -> usize {
+		self.pos
 	}
 }
 

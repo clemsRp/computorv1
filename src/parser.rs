@@ -41,7 +41,7 @@ impl Parser {
 	fn parse_expr_depth(&mut self, min_bind: u8, depth: usize) -> CalcResult<Polynomial> {
 		const MAX_DEPTH: usize = 256;
 		if depth > MAX_DEPTH {
-			return Err(CalcError::at(*self.peek().get_pos(), "Expression is too deeply nested"));
+			return Err(CalcError::at(self.peek().get_pos(), "Expression is too deeply nested"));
 		}
 
 		// Get left part
@@ -50,7 +50,7 @@ impl Parser {
 			&TokenKind::Number(value) => Polynomial::constant(value),
 			&TokenKind::X => Polynomial::x(),
 			&TokenKind::Minus => {
-				let pos = *token.get_pos();
+				let pos = token.get_pos();
 				(-self.parse_expr_depth(BP_UNAIRE, depth + 1)?).map_err(|e| e.at_if_none(pos))?
 			},
 			&TokenKind::LParen => {
@@ -58,11 +58,11 @@ impl Parser {
 				self.expect(TokenKind::RParen)?;
 				lh
 			},
-			&TokenKind::Plus => return Err(CalcError::at(*token.get_pos(), "Unexpected operator, expected number, 'X', or '('")),
-			TokenKind::End => return Err(CalcError::at(*token.get_pos(), "Unexpected end of input, expected number, 'X', or '('")),
+			&TokenKind::Plus => return Err(CalcError::at(token.get_pos(), "Unexpected operator, expected number, 'X', or '('")),
+			TokenKind::End => return Err(CalcError::at(token.get_pos(), "Unexpected end of input, expected number, 'X', or '('")),
 			_ => {
 				return Err(CalcError::at(
-					*token.get_pos(),
+					token.get_pos(),
 					format!("Expected a number, 'X', or '(', found '{}'", token.get_text()),
 				));
 			},
@@ -86,8 +86,8 @@ impl Parser {
 			}
 
 			// Parse right part
-			let op_pos = *op.get_pos();
-			let right_hand_pos = *self.peek().get_pos();
+			let op_pos = op.get_pos();
+			let right_hand_pos = self.peek().get_pos();
 			let right_hand = self.parse_expr_depth(right_power, depth + 1)?;
 
 			// Execute operator between left and right part
@@ -127,8 +127,8 @@ impl Parser {
 	}
 
 	// Helpers
-	fn peek(&self) -> Token {
-		self.tokens[self.index].clone()
+	fn peek(&self) -> &Token {
+		&self.tokens[self.index]
 	}
 
 	fn next(&mut self) -> Token {
@@ -147,7 +147,7 @@ impl Parser {
         	    _ => format!("'{}'", next_token.get_text()),
         	};
         	return Err(CalcError::at(
-        	    *next_token.get_pos(),
+        	    next_token.get_pos(),
         	    format!("Expected {}, found {}", exp_kind.label(), found),
         	));
 		}

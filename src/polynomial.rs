@@ -32,6 +32,10 @@ impl Polynomial {
 			i += 1;
 		}
 
+        if coeffs.len() == 0 {
+            coeffs.push(Fraction::default());
+        }
+
 		Polynomial{coeffs: coeffs}
 	}
 

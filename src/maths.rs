@@ -40,23 +40,6 @@ pub fn sqrt(x: f64) -> f64 {
 	guess
 }
 
-pub fn from_f64(x: f64) -> CalcResult<Fraction> {
-    if !x.is_finite() {
-        return Err(CalcError::new("Cannot convert a non-finite number"));
-    }
-
-    let text = format!("{:.6}", x);
-    let Some((int_part, frac_part)) = text.split_once('.') else {
-        return Err(CalcError::new("Failed to format float"));
-    };
-
-    Fraction::from_decimale(int_part.to_string(), frac_part.to_string())
-}
-
-pub fn to_f64(f: Fraction) -> f64 {
-    f.get_num() as f64 / f.get_denum() as f64
-}
-
 pub fn cbrt(x: f64) -> f64 {
     if x == 0.0 {
         return 0.0;
@@ -73,6 +56,23 @@ pub fn cbrt(x: f64) -> f64 {
         guess = next;
     }
     guess
+}
+
+pub fn from_f64(x: f64) -> CalcResult<Fraction> {
+    if !x.is_finite() {
+        return Err(CalcError::new("Cannot convert a non-finite number"));
+    }
+
+    let text = format!("{:.6}", x);
+    let Some((int_part, frac_part)) = text.split_once('.') else {
+        return Err(CalcError::new("Failed to format float"));
+    };
+
+    Fraction::from_decimale(int_part.to_string(), frac_part.to_string())
+}
+
+pub fn to_f64(f: Fraction) -> f64 {
+    f.get_num() as f64 / f.get_denum() as f64
 }
 
 pub fn cos(x: f64) -> f64 {
